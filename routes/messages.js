@@ -3,23 +3,23 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { MessageMedia } = require("whatsapp-web.js");
 const { getClient, getIO } = require("../whatsappClient");
 const pool = require("../db");
 
-const uploadBase = path.join("C:","xampp","htdocs","mehul","wpbulk","uploads");
+const uploadBase = path.join(__dirname, "..", "uploads");
+
 ["images","pdfs","videos"].forEach(d=>{
   const p = path.join(uploadBase,d);
-  if(!fs.existsSync(p)) fs.mkdirSync(p,{recursive:true});
+  if(!fs.existsSync(p)) fs.mkdirSync(p, {recursive:true});
 });
 
 const storage = multer.diskStorage({
-  destination:(req,file,cb)=>{
-    if(file.mimetype.startsWith("image/")) cb(null, uploadBase+"/images");
-    else if(file.mimetype==="application/pdf") cb(null, uploadBase+"/pdfs");
-    else cb(null, uploadBase+"/videos");
+  destination: (req, file, cb) => {
+    if(file.mimetype.startsWith("image/")) cb(null, path.join(uploadBase,"images"));
+    else if(file.mimetype==="application/pdf") cb(null, path.join(uploadBase,"pdfs"));
+    else cb(null, path.join(uploadBase,"videos"));
   },
-  filename:(req,file,cb)=>cb(null,Date.now()+"_"+file.originalname)
+  filename: (req, file, cb) => cb(null, Date.now()+"_"+file.originalname)
 });
 const upload = multer({ storage });
 
@@ -41,8 +41,9 @@ router.post("/send", upload.any(), async (req,res)=>{
         [null, client.info.wid.user, number, message, "text", "outgoing"]
       );
     }
-    io.emit("sent",{number,status:"success"});
+    io.emit("sent", {number, status:"success"});
   }
+
   res.json({success:true});
 });
 
