@@ -13,10 +13,8 @@ function initSocket(server){
     puppeteer: { headless: true }
   });
 
-  /* ===== SOCKET ===== */
   io.on("connection", socket => {
-    console.log("🟢 PHP connected:", socket.id);
-
+    console.log("🟢 Client connected:", socket.id);
     socket.emit("status", isConnected ? "connected" : "disconnected");
     if(lastQR && !isConnected) socket.emit("qr", lastQR);
 
@@ -27,7 +25,6 @@ function initSocket(server){
     },1000);
   });
 
-  /* ===== QR ===== */
   client.on("qr", async qr => {
     lastQR = await QRCode.toDataURL(qr);
     isConnected = false;
@@ -35,21 +32,18 @@ function initSocket(server){
     io.emit("status", "disconnected");
   });
 
-  /* ===== READY ===== */
   client.on("ready", async () => {
     isConnected = true;
     await pool.query("UPDATE devices SET status='connected'");
     io.emit("status", "connected");
   });
 
-  /* ===== DISCONNECT ===== */
   client.on("disconnected", async () => {
     isConnected = false;
     await pool.query("UPDATE devices SET status='disconnected'");
     io.emit("status", "disconnected");
   });
 
-  /* ===== INCOMING MESSAGE ===== */
   client.on("message", async msg => {
     io.emit("incoming_message", {
       from: msg.from.replace("@c.us",""),
